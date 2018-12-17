@@ -67,9 +67,9 @@ namespace FinalMateus.Forms
                         {
                             user.Id = Int32.Parse(reader["ID"].ToString());
                             user.Name = reader["NAME"].ToString();
-                            user.Active = bool.Parse(reader["ACTIVE"].ToString());
-                            user.Email = reader["Email"].ToString();
                             user.Password = reader["Password"].ToString();
+                            user.Email = reader["Email"].ToString();    
+                            user.Active = bool.Parse(reader["ACTIVE"].ToString());
                             user.UserProfile = new UserProfile()
                             {
                                 Id = Int32.Parse(reader["FK_USERPROFILE"].ToString())
@@ -175,16 +175,16 @@ namespace FinalMateus.Forms
                 {
                     GetData();
                     UserProfile up = (UserProfile)cmbProfile.SelectedItem;
-                    User u = new User(name, email, password,confirm, up, active);
+                    User u = new User(name, password,email, up, active);
                     sqlConnect.Open();
                     string sql = "INSERT INTO [USER](NAME, EMAIL, PASSWORD, FK_USERPROFILE, ACTIVE) VALUES (@name, @email, @password, @profile, @active)";
 
                     SqlCommand cmd = new SqlCommand(sql, sqlConnect);
 
                     cmd.Parameters.Add(new SqlParameter("@name", u.Name));
-                    cmd.Parameters.Add(new SqlParameter("@email", u.Email));
                     cmd.Parameters.Add(new SqlParameter("@password", UserHelper.Hash(password)));
                     cmd.Parameters.Add(new SqlParameter("@email", u.Email));
+                                    
                     cmd.Parameters.Add(new SqlParameter("@profile", u.UserProfile.Id));
                     cmd.Parameters.Add(new SqlParameter("@active", active));
 

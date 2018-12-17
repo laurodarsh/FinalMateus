@@ -105,7 +105,7 @@ namespace FinalMateus.Forms
         private void pbxSearch_Click(object sender, EventArgs e)
         {
             LittleSearch();
-            ResizeDataGridView();
+            
            
         }
     

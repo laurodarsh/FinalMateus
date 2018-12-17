@@ -22,6 +22,12 @@ namespace FinalMateus.Forms
         public UserProfileDetailsForm()
         {
             InitializeComponent();
+            if (string.IsNullOrEmpty(lblId.Text))
+            {
+                pbxDelete.Visible = false;
+                pbxSave.Location = new Point(pbxSave.Location.X + 140, pbxSave.Location.Y);
+
+            }
         }
 
         public UserProfileDetailsForm(int idCategory)
@@ -29,7 +35,7 @@ namespace FinalMateus.Forms
 
             InitializeComponent();
 
-            lblId.Text = idCategory.ToString(); //-------
+            lblId.Text = idCategory.ToString(); 
 
             SqlConnection sqlConnect = new SqlConnection(connectionString);
 
@@ -37,17 +43,17 @@ namespace FinalMateus.Forms
             {
                 try
                 {
-                    //Conectar
+                   
                     sqlConnect.Open();
 
                     SqlCommand cmd = new SqlCommand("SELECT * FROM USER_PROFILE WHERE ID = @id", sqlConnect);
-                    //SqlCommand cmd = new SqlCommand("SELECT * FROM CATEGORY WHERE ID = " + idCategory.ToString(), sqlConnect);
+                    
 
                     cmd.Parameters.Add(new SqlParameter("@id", idCategory));
 
-                    UserProfile userprofile = new UserProfile(); //------
+                    UserProfile userprofile = new UserProfile(); 
 
-                    using (SqlDataReader reader = cmd.ExecuteReader()) //-----
+                    using (SqlDataReader reader = cmd.ExecuteReader()) 
                     {
                         while (reader.Read())
                         {
@@ -64,12 +70,12 @@ namespace FinalMateus.Forms
                 }
                 catch (Exception EX)
                 {
-                    //Tratar exce??es
+                   
                     throw;
                 }
                 finally
                 {
-                    //Fechar
+                    
                     sqlConnect.Close();
                 }
             }
@@ -87,45 +93,92 @@ namespace FinalMateus.Forms
         }
         private void pbxBack_Click(object sender, EventArgs e)
         {
+            UserProfileAllForm upfa = new UserProfileAllForm();
+            upfa.Show();
             this.Close();
         }
 
         private void pbxSave_Click(object sender, EventArgs e)
         {
-            SqlConnection sqlConnect = new SqlConnection(connectionString);
-            try
+            if (string.IsNullOrEmpty(lblId.Text))
             {
-                GetData();
+                SqlConnection sqlConnect = new SqlConnection(connectionString);
+                try
+                {
+                    GetData();
 
-                sqlConnect.Open();
-                string sql = "INSERT INTO USER_PROFILE(NAME, ACTIVE) VALUES (@name, @active)";
+                    sqlConnect.Open();
+                    string sql = "INSERT INTO USER_PROFILE(NAME, ACTIVE) VALUES (@name, @active)";
 
-                SqlCommand cmd = new SqlCommand(sql, sqlConnect);
+                    SqlCommand cmd = new SqlCommand(sql, sqlConnect);
 
-                cmd.Parameters.Add(new SqlParameter("@name", name));
-                cmd.Parameters.Add(new SqlParameter("@active", active));
+                    cmd.Parameters.Add(new SqlParameter("@name", name));
+                    cmd.Parameters.Add(new SqlParameter("@active", active));
+                    if (name != "")
+                    {
+                        cmd.ExecuteNonQuery();
+                        MessageBox.Show("Adicionado com sucesso!");
+                        Log.SaveLog(sqlConnect,"Perfil adicionado", DateTime.Now, "Adição");
+                    }
+                    else
+                    {
+                        MessageBox.Show("Erro ao adicionar perfil, nome em branco!");
+                    }
 
-                cmd.ExecuteNonQuery();
-
-                MessageBox.Show("Adicionado com sucesso!");
-                
-
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Erro ao adicionar perfil!" + ex.Message);
+                    ClearData();
+                }
+                finally
+                {
+                    ClearData();
+                    sqlConnect.Close();
+                }
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show("Erro ao adicionar categoria!" + ex.Message);
-                ClearData();
-            }
-            finally
-            {
-                ClearData();
-                sqlConnect.Close();
+                SqlConnection sqlConnect = new SqlConnection(connectionString);
+
+                try
+                {
+                    GetData();
+
+                    sqlConnect.Open();
+
+                    string sql = "UPDATE USER_PROFILE SET NAME = @name, ACTIVE = @active WHERE ID = @id";
+
+
+                    SqlCommand cmd = new SqlCommand(sql, sqlConnect);
+
+                    cmd.Parameters.Add(new SqlParameter("@name", name));
+                    cmd.Parameters.Add(new SqlParameter("@active", active));
+                    cmd.Parameters.Add(new SqlParameter("@id", lblId.Text));
+
+                    cmd.ExecuteNonQuery();
+
+                    MessageBox.Show("Alterações salvas com sucesso!");
+                    Log.SaveLog(sqlConnect,"Perfil Editado", DateTime.Now, "Edição");
+                }
+                catch (Exception Ex)
+                {
+                    MessageBox.Show("Erro ao editar este perfil" + "\n\n" + Ex.Message);
+                    throw;
+                }
+                finally
+                {
+                    sqlConnect.Close();
+                    UserProfileAllForm upf = new UserProfileAllForm();
+                    upf.Show();
+                    this.Close();
+                }
             }
         }
 
         private void pbxDelete_Click(object sender, EventArgs e)
         {
-            if (!string.IsNullOrEmpty(lblId.Text)) //-----
+            if (!string.IsNullOrEmpty(lblId.Text)) 
             {
                 SqlConnection sqlConnect = new SqlConnection(connectionString);
 
@@ -141,15 +194,18 @@ namespace FinalMateus.Forms
 
                     cmd.ExecuteNonQuery();
 
-                    MessageBox.Show("usuario inativo!");
+                    MessageBox.Show("Perfil inativo!");
+                    Log.SaveLog(sqlConnect,"Perfil Desativadao", DateTime.Now, "Excluir");
+
                 }
                 catch (Exception Ex)
                 {
-                    MessageBox.Show("Erro ao desativar este usuario!" + "\n\n" + Ex.Message);
+                    MessageBox.Show("Erro ao desativar este perfil!" + "\n\n" + Ex.Message);
                     throw;
                 }
                 finally
                 {
+                    ClearData();
                     sqlConnect.Close();
                 }
             }
@@ -157,12 +213,12 @@ namespace FinalMateus.Forms
 
         private void pbxBack_MouseEnter(object sender, EventArgs e)
         {
-
+            pbxBack.BackgroundImage = Resources.BackColor;
         }
 
         private void pbxBack_MouseLeave(object sender, EventArgs e)
         {
-
+            pbxBack.BackgroundImage = Resources.Back;
         }
 
         private void pbxSave_MouseEnter(object sender, EventArgs e)
@@ -184,5 +240,6 @@ namespace FinalMateus.Forms
         {
             pbxDelete.BackgroundImage = Resources.Delete_Close;
         }
+
     }
 }

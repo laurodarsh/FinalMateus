@@ -18,18 +18,24 @@ namespace FinalMateus.Forms
         string name = "";
         bool active = false;
         string connectionString = "workstation id=StockControl.mssql.somee.com;packet size=4096;user id=levelupacademy_SQLLogin_1;pwd=3wwate8gu1;data source=StockControl.mssql.somee.com;persist security info=False;initial catalog=StockControl";
-
-        public CategoryDetailsForm()
+        User userAux;
+        public CategoryDetailsForm(User user)
         {
             InitializeComponent();
+            userAux = user;
+            if (string.IsNullOrEmpty(lblId.Text))
+            {
+                pbxDelete.Visible = false;
+                pbxSave.Location = new Point(pbxSave.Location.X+140, pbxSave.Location.Y);
+            }
         }
 
-        public CategoryDetailsForm(int idCategory)
+        public CategoryDetailsForm(int idCategory,User user)
         {
 
             InitializeComponent();
-
-            lblId.Text = idCategory.ToString(); //-------
+            userAux = user;
+            lblId.Text = idCategory.ToString(); 
 
             SqlConnection sqlConnect = new SqlConnection(connectionString);
 
@@ -37,17 +43,17 @@ namespace FinalMateus.Forms
             {
                 try
                 {
-                    //Conectar
+                    
                     sqlConnect.Open();
 
                     SqlCommand cmd = new SqlCommand("SELECT * FROM CATEGORY WHERE ID = @id", sqlConnect);
-                    //SqlCommand cmd = new SqlCommand("SELECT * FROM CATEGORY WHERE ID = " + idCategory.ToString(), sqlConnect);
+                    
 
                     cmd.Parameters.Add(new SqlParameter("@id", idCategory));
 
-                    Category category = new Category(); //------
+                    Category category = new Category(); 
 
-                    using (SqlDataReader reader = cmd.ExecuteReader()) //-----
+                    using (SqlDataReader reader = cmd.ExecuteReader()) 
                     {
                         while (reader.Read())
                         {
@@ -64,12 +70,12 @@ namespace FinalMateus.Forms
                 }
                 catch (Exception EX)
                 {
-                    //Tratar exce??es
+                    
                     throw;
                 }
                 finally
                 {
-                    //Fechar
+                   
                     sqlConnect.Close();
                 }
             }
@@ -88,51 +94,97 @@ namespace FinalMateus.Forms
         }
 
         private void pbxBack_Click(object sender, EventArgs e)
-        {
+        {       
+            
+            CategoryAllForm caf = new CategoryAllForm(userAux);
+            caf.Show();
             this.Close();
         }
 
         private void pbxSave_Click(object sender, EventArgs e)
         {
-            SqlConnection sqlConnect = new SqlConnection(connectionString);
-            try
+            if (string.IsNullOrEmpty(lblId.Text))
             {
-                GetData();
-
-                sqlConnect.Open();
-                string sql = "INSERT INTO CATEGORY(NAME, ACTIVE) VALUES (@name, @active)";
-
-                SqlCommand cmd = new SqlCommand(sql, sqlConnect);
-
-                cmd.Parameters.Add(new SqlParameter("@name", name));
-                cmd.Parameters.Add(new SqlParameter("@active", active));
-                if(name != "")
+               
+                SqlConnection sqlConnect = new SqlConnection(connectionString);
+                try
                 {
-                    cmd.ExecuteNonQuery();
-                    MessageBox.Show("Adicionado com sucesso!");
+                    GetData();
+
+                    sqlConnect.Open();
+                    string sql = "INSERT INTO CATEGORY(NAME, ACTIVE) VALUES (@name, @active)";
+
+                    SqlCommand cmd = new SqlCommand(sql, sqlConnect);
+
+                    cmd.Parameters.Add(new SqlParameter("@name", name));
+                    cmd.Parameters.Add(new SqlParameter("@active", active));
+                    if (name != "")
+                    {
+                        cmd.ExecuteNonQuery();
+                        MessageBox.Show("Adicionado com sucesso!");
+                        Log.SaveLog(sqlConnect,"Categoria Adicionada", DateTime.Now, "Adição");
+                    }
+                    else
+                    {
+                        MessageBox.Show("Erro ao adicionar categoria, nome em branco!");
+                    }
                 }
-                else
+
+                catch (Exception ex)
                 {
-                       MessageBox.Show("Erro ao adicionar categoria, nome em branco!");
-                }   
-            }
+                    MessageBox.Show("Erro ao adicionar categoria!" + ex.Message);
+                    ClearData();
+                }
 
-            catch (Exception ex)
-            {                         
-                MessageBox.Show("Erro ao adicionar categoria!" + ex.Message);
-                ClearData();
+                finally
+                {
+                    ClearData();
+                    sqlConnect.Close();
+                    
+                }
             }
-
-            finally
+            else
             {
-                ClearData();
-                sqlConnect.Close();
+                SqlConnection sqlConnect = new SqlConnection(connectionString);
+
+                try
+                {
+                    GetData();
+
+                    sqlConnect.Open();
+
+                    string sql = "UPDATE CATEGORY SET NAME = @name, ACTIVE = @active WHERE ID = @id";
+
+                    SqlCommand cmd = new SqlCommand(sql, sqlConnect);
+
+                    cmd.Parameters.Add(new SqlParameter("@name", name));
+                    cmd.Parameters.Add(new SqlParameter("@active", active));
+                    cmd.Parameters.Add(new SqlParameter("@id", lblId.Text));
+
+                    cmd.ExecuteNonQuery();
+
+                    MessageBox.Show("Alterações salvas com sucesso!");
+                    Log.SaveLog(sqlConnect,"Categoria Editada", DateTime.Now, "Edição");
+                }
+                catch (Exception Ex)
+                {
+                    MessageBox.Show("Erro ao editar esta categoria!" + "\n\n" + Ex.Message);
+                    throw;
+                }
+                finally
+                {
+                    sqlConnect.Close();
+                    CategoryAllForm caf = new CategoryAllForm(userAux);
+                    caf.Show();
+                    this.Close();
+
+                }
             }
         }
 
         private void pbxDelete_Click(object sender, EventArgs e)
         {
-            if (!string.IsNullOrEmpty(lblId.Text)) //-----
+            if (!string.IsNullOrEmpty(lblId.Text)) 
             {
                 SqlConnection sqlConnect = new SqlConnection(connectionString);
 
@@ -148,7 +200,8 @@ namespace FinalMateus.Forms
 
                     cmd.ExecuteNonQuery();
 
-                    MessageBox.Show("categoria inativa!");
+                    MessageBox.Show("Categoria inativa!");
+                    Log.SaveLog(sqlConnect,"Categoria Desativada", DateTime.Now, "Excluir");
                 }
                 catch (Exception Ex)
                 {
@@ -157,7 +210,9 @@ namespace FinalMateus.Forms
                 }
                 finally
                 {
+                    ClearData();
                     sqlConnect.Close();
+                    
                 }
             }
         }
@@ -165,12 +220,12 @@ namespace FinalMateus.Forms
         #region images
         private void pbxBack_MouseEnter(object sender, EventArgs e)
         {
-
+            pbxBack.BackgroundImage = Resources.BackColor;
         }
 
         private void pbxBack_MouseLeave(object sender, EventArgs e)
         {
-
+            pbxBack.BackgroundImage = Resources.Back;
         }
 
         private void pbxSave_MouseEnter(object sender, EventArgs e)
@@ -195,5 +250,7 @@ namespace FinalMateus.Forms
 
         }
         #endregion
+
+       
     }
 }

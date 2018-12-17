@@ -1,4 +1,5 @@
-﻿using FinalMateus.Properties;
+﻿using FinalMateus.Classes;
+using FinalMateus.Properties;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -13,21 +14,30 @@ namespace FinalMateus.Forms
 {
     public partial class HomeForm : Form
     {
-        
-
-        public HomeForm()
+        bool aux = true;
+        User userAux;
+        public HomeForm(User user)
         {
             InitializeComponent();
-            
+            userAux = user;
+
+            if (user.UserProfile.Name != "Gerente")
+            {
+                aux = false;
+                pbxLog.Enabled = false;
+                pbxUser.Enabled = false;
+                pbxUserProfile.Enabled = false;
+
+            }
         }
-        
+
         private void pbxBack_Click(object sender, EventArgs e)
         {
             this.Hide();
             LoginForm lf = new LoginForm();
-            lf.FormClosed += (s, arg) => this.Close();
+            lf.FormClosed += (s, args) => this.Close();
             lf.Show();
-            
+                                
         }
 
         private void pbxBack_MouseEnter(object sender, EventArgs e)
@@ -42,95 +52,118 @@ namespace FinalMateus.Forms
 
         private void pbxCategory_Click(object sender, EventArgs e)
         {
-            this.Hide();
-            CategoryAllForm caf = new CategoryAllForm();
-            caf.FormClosed += (s, arg) => this.Close();
+
+            CategoryAllForm caf = new CategoryAllForm(userAux);
             caf.Show();
-            
+
         }
 
         private void pbxProduct_Click(object sender, EventArgs e)
         {
-            this.Hide();
-            ProductAllForm paf = new ProductAllForm();
-            paf.FormClosed += (s, arg) => this.Close();
+
+            ProductAllForm paf = new ProductAllForm(userAux);
             paf.Show();
         }
 
         private void pbxUser_Click(object sender, EventArgs e)
         {
-            this.Hide();
             UserAllForm uaf = new UserAllForm();
-            uaf.FormClosed += (s, arg) => this.Close();
             uaf.Show();
         }
 
         private void pbxUserProfile_Click(object sender, EventArgs e)
         {
-            this.Hide();
             UserProfileAllForm upaf = new UserProfileAllForm();
-            upaf.FormClosed += (s, arg) => this.Close();
             upaf.Show();
         }
 
         private void pbxLog_Click(object sender, EventArgs e)
         {
-            this.Hide();
             LogForm lf = new LogForm();
-            lf.FormClosed += (s, arg) => this.Close();
             lf.Show();
         }
 
         private void pbxCategory_MouseEnter(object sender, EventArgs e)
         {
-
+            pbxCategory.BackgroundImage = Resources.CategoryChanged;
         }
 
         private void pbxCategory_MouseLeave(object sender, EventArgs e)
         {
-
+            pbxCategory.BackgroundImage = Resources.Category;
         }
 
         private void pbxProduct_MouseEnter(object sender, EventArgs e)
         {
-
+            pbxProduct.BackgroundImage = Resources.ProductChanged;
         }
 
         private void pbxProduct_MouseLeave(object sender, EventArgs e)
         {
-
+            pbxProduct.BackgroundImage = Resources.Product;
         }
 
         private void pbxUser_MouseEnter(object sender, EventArgs e)
         {
-            pbxUser.BackgroundImage = Resources.User_Changed;
+            if (aux)
+            {
+                pbxUser.BackgroundImage = Resources.UserChanged;
+            }
+            else
+            {
+                pbxUser.Cursor = Cursors.Arrow;
+            }
         }
 
         private void pbxUser_MouseLeave(object sender, EventArgs e)
         {
-            pbxUser.BackgroundImage = Resources.User;
+            if (aux)
+            {
+                pbxUser.BackgroundImage = Resources.User;
+            }
         }
 
         private void pbxUserProfile_MouseEnter(object sender, EventArgs e)
         {
-
+            if (aux)
+            {
+                pbxUserProfile.BackgroundImage = Resources.User_profileChanged;
+            }
+            else
+            {
+                pbxUserProfile.Cursor = Cursors.Arrow;
+            }
         }
 
         private void pbxUserProfile_MouseLeave(object sender, EventArgs e)
         {
-
+            if (aux)
+            {
+                pbxUserProfile.BackgroundImage = Resources.User_profile;
+            }
         }
 
         private void pbxLog_MouseEnter(object sender, EventArgs e)
         {
+            if (aux)
+            {
+                pbxLog.BackgroundImage = Resources.logChanged;
+            }
+            else
+            {
+                pbxLog.Cursor = Cursors.Arrow;
+            }
 
         }
 
         private void pbxLog_MouseLeave(object sender, EventArgs e)
         {
-
+            if (aux)
+            {
+                pbxLog.BackgroundImage = Resources.log;
+            }
         }
 
-        
+
     }
 }

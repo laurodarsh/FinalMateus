@@ -18,7 +18,7 @@ namespace FinalMateus.Forms
         string name = "";
         string email = "";
         string password = "";
-        string confirmPass = "";
+        string confirm = "";
         string profile = "";
         bool active = false;
         List<UserProfile> users = new List<UserProfile>();
@@ -29,14 +29,21 @@ namespace FinalMateus.Forms
             InitializeComponent();
             cmbProfile.DisplayMember = "NAME";
             LoadComboBox();
+            if (string.IsNullOrEmpty(lblId.Text))
+            {
+                pbxDelete.Visible = false;
+                pbxSave.Location = new Point(pbxSave.Location.X + 140, pbxSave.Location.Y);
+
+            }
         }
 
         public UserDetailsForm(int idUser)
         {
 
             InitializeComponent();
+            cmbProfile.DisplayMember = "Name";
 
-            lblId.Text = idUser.ToString(); //-------
+            lblId.Text = idUser.ToString(); 
 
             SqlConnection sqlConnect = new SqlConnection(connectionString);
 
@@ -44,17 +51,17 @@ namespace FinalMateus.Forms
             {
                 try
                 {
-                    //Conectar
+                    
                     sqlConnect.Open();
 
                     SqlCommand cmd = new SqlCommand("SELECT * FROM [USER] WHERE ID = @id", sqlConnect);
-                    //SqlCommand cmd = new SqlCommand("SELECT * FROM CATEGORY WHERE ID = " + idCategory.ToString(), sqlConnect);
+                    
 
                     cmd.Parameters.Add(new SqlParameter("@id", idUser));
 
-                    User user = new User(); //------
+                    User user = new User(); 
 
-                    using (SqlDataReader reader = cmd.ExecuteReader()) //-----
+                    using (SqlDataReader reader = cmd.ExecuteReader()) 
                     {
                         while (reader.Read())
                         {
@@ -63,6 +70,10 @@ namespace FinalMateus.Forms
                             user.Active = bool.Parse(reader["ACTIVE"].ToString());
                             user.Email = reader["Email"].ToString();
                             user.Password = reader["Password"].ToString();
+                            user.UserProfile = new UserProfile()
+                            {
+                                Id = Int32.Parse(reader["FK_USERPROFILE"].ToString())
+                            };
                         }
                     }
 
@@ -70,17 +81,22 @@ namespace FinalMateus.Forms
                     cbxActive.Checked = user.Active;
                     tbxEmail.Text = user.Email;
                     tbxPassword.Text = user.Password;
-
+                    int indexCombo = 0;
+                    if (user.UserProfile != null)
+                    {
+                        indexCombo = user.UserProfile.Id;
+                    }
+                    InitializeComboBox(cmbProfile, indexCombo);
 
                 }
                 catch (Exception EX)
                 {
-                    //Tratar exce??es
+                    
                     throw;
                 }
                 finally
                 {
-                    //Fechar
+                    
                     sqlConnect.Close();
                 }
             }
@@ -91,7 +107,7 @@ namespace FinalMateus.Forms
             name = tbxName.Text;
             email = tbxEmail.Text;
             password =tbxPassword.Text;
-            confirmPass = tbxConfirmPassword.Text;
+            confirm = tbxConfirm.Text;
             profile = cmbProfile.Text;
             active = cbxActive.Checked ? true : false;
         }
@@ -101,14 +117,14 @@ namespace FinalMateus.Forms
             tbxName.Text = "";
             tbxEmail.Text = "";
             tbxPassword.Text = "";
-            tbxConfirmPassword.Text = "";
+            tbxConfirm.Text = "";
             cmbProfile.Text = "";
             cbxActive.Checked = false;
         }
 
         private void pbxDelete_Click(object sender, EventArgs e)
         {
-            if (!string.IsNullOrEmpty(lblId.Text)) //-----
+            if (!string.IsNullOrEmpty(lblId.Text)) 
             {
                 SqlConnection sqlConnect = new SqlConnection(connectionString);
 
@@ -124,7 +140,9 @@ namespace FinalMateus.Forms
 
                     cmd.ExecuteNonQuery();
 
-                    MessageBox.Show("usuario inativo!");
+                    MessageBox.Show("Usuario inativo!");
+                    Log.SaveLog(sqlConnect,"Usuario Desativado", DateTime.Now, "Excluir");
+
                 }
                 catch (Exception Ex)
                 {
@@ -150,47 +168,125 @@ namespace FinalMateus.Forms
 
         private void pbxSave_Click(object sender, EventArgs e)
         {
+            if (string.IsNullOrEmpty(lblId.Text))
+            {
+                SqlConnection sqlConnect = new SqlConnection(connectionString);
+                try
+                {
+                    GetData();
+                    UserProfile up = (UserProfile)cmbProfile.SelectedItem;
+                    User u = new User(name, email, password,confirm, up, active);
+                    sqlConnect.Open();
+                    string sql = "INSERT INTO [USER](NAME, EMAIL, PASSWORD, FK_USERPROFILE, ACTIVE) VALUES (@name, @email, @password, @profile, @active)";
+
+                    SqlCommand cmd = new SqlCommand(sql, sqlConnect);
+
+                    cmd.Parameters.Add(new SqlParameter("@name", u.Name));
+                    cmd.Parameters.Add(new SqlParameter("@email", u.Email));
+                    cmd.Parameters.Add(new SqlParameter("@password", UserHelper.Hash(password)));
+                    cmd.Parameters.Add(new SqlParameter("@email", u.Email));
+                    cmd.Parameters.Add(new SqlParameter("@profile", u.UserProfile.Id));
+                    cmd.Parameters.Add(new SqlParameter("@active", active));
+
+                    if (name != "")
+                    {
+                        cmd.ExecuteNonQuery();
+                        MessageBox.Show("Adicionado com sucesso!");
+                        Log.SaveLog(sqlConnect,"Usuario Adicionado", DateTime.Now, "Adição");
+                    }
+                    else
+                    {
+                        MessageBox.Show("Erro ao adicionar usuario, nome em branco!");
+                    }
+                }
+
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Erro ao adicionar usuario!" + ex.Message);
+                    ClearData();
+                }
+
+                finally
+                {
+                    ClearData();
+                    sqlConnect.Close();
+                }
+            }
+            else
+            {
+                SqlConnection sqlConnect = new SqlConnection(connectionString);
+
+                try
+                {
+                    GetData();
+                    UserProfile up = (UserProfile)cmbProfile.SelectedItem;
+                    sqlConnect.Open();
+
+                    string sql = "UPDATE [USER] SET NAME = @name,PASSWORD =@password,EMAIL = @email, ACTIVE = @active, FK_USERPROFILE = @fk_profile WHERE ID= @id";
+
+                    SqlCommand cmd = new SqlCommand(sql, sqlConnect);
+
+                    cmd.Parameters.Add(new SqlParameter("@id", lblId.Text));
+                    cmd.Parameters.Add(new SqlParameter("@name", name));
+                    cmd.Parameters.Add(new SqlParameter("@password", UserHelper.Hash(password)));
+                    cmd.Parameters.Add(new SqlParameter("@email", email));  
+                    cmd.Parameters.Add(new SqlParameter("@active", active));
+                     cmd.Parameters.Add(new SqlParameter("@fk_profile", up.Id));
+                 
+
+                    cmd.ExecuteNonQuery();
+
+                    MessageBox.Show("Altereções salvas com sucesso!");
+                    Log.SaveLog(sqlConnect,"Usuario Editado", DateTime.Now, "Edição");
+                }
+                catch (Exception Ex)
+                {
+                    MessageBox.Show("Erro ao editar este usuario!" + "\n\n" + Ex.Message);
+                    throw;
+                }
+                finally
+                {
+                    sqlConnect.Close();
+                    UserAllForm uaf = new UserAllForm();
+                    uaf.Show();
+                    this.Close();
+                }
+            }
+        }
+
+        private void InitializeComboBox(ComboBox cbxProduct, int indexCombo)
+        {
+            cbxProduct.Items.Add("Selecione.. ");
             SqlConnection sqlConnect = new SqlConnection(connectionString);
+
             try
             {
-                GetData();
-                UserProfile up = (UserProfile)cmbProfile.SelectedItem;
-                User u = new User(name, email, password, up, active);
+                
                 sqlConnect.Open();
-                string sql = "INSERT INTO [USER](NAME, EMAIL, PASSWORD, FK_USERPROFILE, ACTIVE) VALUES (@name, @email, @password, @profile, @active)";
 
-                SqlCommand cmd = new SqlCommand(sql, sqlConnect);
+                SqlCommand cmd = new SqlCommand("SELECT * FROM USER_PROFILE", sqlConnect);
 
-                cmd.Parameters.Add(new SqlParameter("@name",u.Name));
-                cmd.Parameters.Add(new SqlParameter("@email",u.Email));
-                cmd.Parameters.Add(new SqlParameter("@password",u.Password));
-                //cmd.Parameters.Add(new SqlParameter("@confirmpassword",u.ConfirmPassword));
-                cmd.Parameters.Add(new SqlParameter("@profile",u.UserProfile.Id));
-                cmd.Parameters.Add(new SqlParameter("@active", active));
-
-                if (name != "")
+                using (SqlDataReader reader = cmd.ExecuteReader()) 
                 {
-                    cmd.ExecuteNonQuery();
-                    MessageBox.Show("Adicionado com sucesso!");
-                }
-                else
-                {
-                    MessageBox.Show("Erro ao adicionar categoria, nome em branco!");
-                }
+                    while (reader.Read())
+                    {
+                        UserProfile up = new UserProfile(Int32.Parse(reader["ID"].ToString()), reader["NAME"].ToString(), bool.Parse(reader["ACTIVE"].ToString()));
+                        cmbProfile.Items.Add(up);
+                      
+                    }
+                }            
+                cmbProfile.SelectedItem = cmbProfile.Items[indexCombo];
             }
-
-            catch (Exception ex)
+            catch (Exception EX)
             {
-                MessageBox.Show("Erro ao adicionar categoria!" + ex.Message);
-                ClearData();
+                MessageBox.Show("erro de acesso ao banco de dados. " + EX.Message);
             }
-
             finally
             {
-                ClearData();
                 sqlConnect.Close();
             }
         }
+
         void LoadComboBox()
         {
             SqlConnection cn = new SqlConnection(connectionString);
@@ -233,17 +329,19 @@ namespace FinalMateus.Forms
 
         private void pbxBack_Click(object sender, EventArgs e)
         {
+            UserAllForm uaf = new UserAllForm();
+            uaf.Show();
             this.Close();
         }
 
         private void pbxBack_MouseEnter(object sender, EventArgs e)
         {
-
+            pbxBack.BackgroundImage = Resources.BackColor;
         }
 
         private void pbxBack_MouseLeave(object sender, EventArgs e)
         {
-
+            pbxBack.BackgroundImage = Resources.Back;
         }
     }
 }

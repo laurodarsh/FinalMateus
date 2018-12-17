@@ -34,7 +34,7 @@ namespace FinalMateus.Forms
                 sqlConnect.Open();
 
                 SqlCommand cmd = new SqlCommand("SELECT * FROM USER_PROFILE", sqlConnect);
-                // SqlDataReader reader = cmd.ExecuteReader();
+                
 
                 cmd.ExecuteNonQuery();
 
@@ -98,16 +98,14 @@ namespace FinalMateus.Forms
         private void pbxBack_Click(object sender, EventArgs e)
         {
             this.Hide();
-            HomeForm hm = new HomeForm();
-            hm.FormClosed += (s, arg) => this.Close();
-            hm.Show();
+           
         }
 
         private void pbxAdd_Click(object sender, EventArgs e)
         {
             UserProfileDetailsForm updf = new UserProfileDetailsForm();
             updf.Show();
-            updf.FormClosed += (s, arg) => ShowData();
+            this.Hide();
         }
 
         private void pbxEdit_Click(object sender, EventArgs e)
@@ -115,6 +113,7 @@ namespace FinalMateus.Forms
             int idUserProfile = Int32.Parse(dgvUserProfile.SelectedRows[0].Cells[0].Value.ToString());
             UserProfileDetailsForm updf = new UserProfileDetailsForm(idUserProfile);
             updf.Show();
+            this.Close();
         }
 
         private void pbxDelete_Click(object sender, EventArgs e)
@@ -135,12 +134,13 @@ namespace FinalMateus.Forms
 
                 cmd.ExecuteNonQuery();
                 ShowData();
-                MessageBox.Show("usuario inativo!");
+                MessageBox.Show("Perfil inativo!");
+                Log.SaveLog(sqlConnect,"Perfil Desativado", DateTime.Now, "Excluir");
 
             }
             catch (Exception Ex)
             {
-                MessageBox.Show("Erro ao editar este usuario!" + "\n\n" + Ex.Message);
+                MessageBox.Show("Erro ao editar este perfil!" + "\n\n" + Ex.Message);
                 throw;
             }
             finally
@@ -151,32 +151,32 @@ namespace FinalMateus.Forms
 
         private void pbxSearch_MouseEnter(object sender, EventArgs e)
         {
-
+            pbxSearch.BackgroundImage = Resources.SearchChanged;
         }
 
         private void pbxSearch_MouseLeave(object sender, EventArgs e)
         {
-
+            pbxSearch.BackgroundImage = Resources.Search;
         }
 
         private void pbxClean_MouseEnter(object sender, EventArgs e)
         {
-
+            pbxClean.BackgroundImage = Resources.CleanChanged;
         }
 
         private void pbxClean_MouseLeave(object sender, EventArgs e)
         {
-
+            pbxClean.BackgroundImage = Resources.Clean;
         }
 
         private void pbxBack_MouseEnter(object sender, EventArgs e)
         {
-
+            pbxBack.BackgroundImage = Resources.BackColor;
         }
 
         private void pbxBack_MouseLeave(object sender, EventArgs e)
         {
-
+            pbxBack.BackgroundImage = Resources.Back;
         }
 
         private void pbxAdd_MouseEnter(object sender, EventArgs e)
@@ -191,12 +191,12 @@ namespace FinalMateus.Forms
 
         private void pbxEdit_MouseEnter(object sender, EventArgs e)
         {
-
+            pbxEdit.BackgroundImage = Resources.EditChanged;
         }
 
         private void pbxEdit_MouseLeave(object sender, EventArgs e)
         {
-
+            pbxEdit.BackgroundImage = Resources.Edit;
         }
 
         private void pbxDelete_MouseEnter(object sender, EventArgs e)

@@ -19,23 +19,31 @@ namespace FinalMateus.Forms
         bool active = false;
         float price = 0;
         string category = "";
+        User userAux;
         List<Category> categories = new List<Category>();
         string connectionString = "workstation id=StockControl.mssql.somee.com;packet size=4096;user id=levelupacademy_SQLLogin_1;pwd=3wwate8gu1;data source=StockControl.mssql.somee.com;persist security info=False;initial catalog=StockControl";
 
-        public ProductDetailsForm()
+        public ProductDetailsForm(User user)
         {
             InitializeComponent();
+            userAux = user;
             cmbCategory.DisplayMember = "NAME";
             LoadComboBox();
- 
+            if (string.IsNullOrEmpty(lblId.Text))
+            {
+                pbxDelete.Visible = false;
+                pbxSave.Location = new Point(pbxSave.Location.X + 140, pbxSave.Location.Y);
+
+            }
+
         }
 
         public ProductDetailsForm(int idProduct)
         {
 
             InitializeComponent();
-
-            lblId.Text = idProduct.ToString(); //-------
+            cmbCategory.DisplayMember = "Name";
+            lblId.Text = idProduct.ToString(); 
 
             SqlConnection sqlConnect = new SqlConnection(connectionString);
 
@@ -43,17 +51,17 @@ namespace FinalMateus.Forms
             {
                 try
                 {
-                    //Conectar
+                    
                     sqlConnect.Open();
 
                     SqlCommand cmd = new SqlCommand("SELECT * FROM PRODUCT WHERE ID = @id", sqlConnect);
-                    //SqlCommand cmd = new SqlCommand("SELECT * FROM CATEGORY WHERE ID = " + idCategory.ToString(), sqlConnect);
+               
 
                     cmd.Parameters.Add(new SqlParameter("@id", idProduct));
 
-                    Product product = new Product(); //------
+                    Product product = new Product(); 
 
-                    using (SqlDataReader reader = cmd.ExecuteReader()) //-----
+                    using (SqlDataReader reader = cmd.ExecuteReader()) 
                     {
                         while (reader.Read())
                         {
@@ -61,27 +69,71 @@ namespace FinalMateus.Forms
                             product.Name = reader["NAME"].ToString();
                             product.Active = bool.Parse(reader["ACTIVE"].ToString());
                             product.Price = float.Parse(reader["PRICE"].ToString());
+                            product.Category = new Category()
+                            {
+                                Id = Int32.Parse(reader["FK_PRODUCT"].ToString())
+                            };
+
                         }
                     }
 
                     tbxName.Text = product.Name;
                     cbxActive.Checked = product.Active;
                     tbxPrice.Text = product.Price.ToString();
+                    int indexCombo = 0;
+                    if (product.Category != null)
+                    {
+                        indexCombo = product.Category.Id;
+                    }
+                    InitializeComboBox(cmbCategory, indexCombo);
 
 
                 }
                 catch (Exception EX)
-                {
-                    //Tratar exce??es
+                {                   
                     throw;
                 }
                 finally
                 {
-                    //Fechar
+                    
                     sqlConnect.Close();
                 }
             }
         }
+
+        private void InitializeComboBox(ComboBox cbxProduct, int indexCombo)
+        {
+            cbxProduct.Items.Add("Selecione.. ");
+            SqlConnection sqlConnect = new SqlConnection(connectionString);
+
+            try
+            {
+               
+                sqlConnect.Open();
+
+                SqlCommand cmd = new SqlCommand("SELECT * FROM CATEGORY", sqlConnect);
+
+                using (SqlDataReader reader = cmd.ExecuteReader()) 
+                {
+                    while (reader.Read())
+                    {
+                        Category c = new Category(Int32.Parse(reader["ID"].ToString()), reader["NAME"].ToString(), bool.Parse(reader["ACTIVE"].ToString()));
+                        cmbCategory.Items.Add(c);
+                    }
+                }
+
+                cmbCategory.SelectedItem = cmbCategory.Items[indexCombo];
+            }
+            catch (Exception EX)
+            {
+                MessageBox.Show("Erro de acesso ao banco de dados. " + EX.Message);
+            }
+            finally
+            {
+                sqlConnect.Close();
+            }
+        }
+
         void GetData()
         {
             name = tbxName.Text;
@@ -100,42 +152,87 @@ namespace FinalMateus.Forms
 
         private void pbxBack_Click(object sender, EventArgs e)
         {
-            this.Close();
+            ProductAllForm paf = new ProductAllForm(userAux);
+            paf.Show();
+            this.Hide();
         }
 
         private void pbxSave_Click(object sender, EventArgs e)
         {
-            SqlConnection sqlConnect = new SqlConnection(connectionString);
-            try
+            if (string.IsNullOrEmpty(lblId.Text))
             {
-                GetData();
-                Category c = (Category)cmbCategory.SelectedItem;
-                Product p = new Product(name, price, c, active);
-                sqlConnect.Open();
-                string sql = "INSERT INTO PRODUCT(NAME, PRICE, ACTIVE, FK_PRODUCT) VALUES (@name, @price, @active, @category)";
+                SqlConnection sqlConnect = new SqlConnection(connectionString);
+                try
+                {
+                    GetData();
+                    Category c = (Category)cmbCategory.SelectedItem;
+                    Product p = new Product(name, price, c, active);
+                    sqlConnect.Open();
+                    string sql = "INSERT INTO PRODUCT(NAME, PRICE, ACTIVE, FK_PRODUCT) VALUES (@name, @price, @active, @category)";
 
-                SqlCommand cmd = new SqlCommand(sql, sqlConnect);
+                    SqlCommand cmd = new SqlCommand(sql, sqlConnect);
 
-                cmd.Parameters.Add(new SqlParameter("@name", p.Name));
-                cmd.Parameters.Add(new SqlParameter("@price", p.Price));
-                cmd.Parameters.Add(new SqlParameter("@active", p.Active));
-                cmd.Parameters.Add(new SqlParameter("@category", p.Category.Id));
-                cmd.ExecuteNonQuery();
+                    cmd.Parameters.Add(new SqlParameter("@name", p.Name));
+                    cmd.Parameters.Add(new SqlParameter("@price", p.Price));
+                    cmd.Parameters.Add(new SqlParameter("@active", p.Active));
+                    cmd.Parameters.Add(new SqlParameter("@category", p.Category.Id));
+                    cmd.ExecuteNonQuery();
 
-                MessageBox.Show("Adicionado com sucesso!");
-              
+                    MessageBox.Show("Adicionado com sucesso!");
+                    Log.SaveLog(sqlConnect,"Produto Adicionado", DateTime.Now, "Adição");
 
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Erro ao adicionar produto!" + ex.Message);
+                    ClearData();
+                }
+                finally
+                {
+                    ClearData();
+                    sqlConnect.Close();
+
+                }
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show("Erro ao adicionar categoria!" + ex.Message);
-                ClearData();
-            }
-            finally
-            {
-                ClearData();
-                sqlConnect.Close();
 
+                SqlConnection sqlConnect = new SqlConnection(connectionString);
+
+                try
+                {
+                    GetData();
+                    Category c = (Category)cmbCategory.SelectedItem;
+                    sqlConnect.Open();
+
+                    string sql = "UPDATE PRODUCT SET NAME = @name, PRICE = @price, ACTIVE = @active, FK_PRODUCT = @category WHERE ID= @id";
+                    SqlCommand cmd = new SqlCommand(sql, sqlConnect);
+
+                    cmd.Parameters.Add(new SqlParameter("@id", lblId.Text));
+                    cmd.Parameters.Add(new SqlParameter("@name", name));
+                    cmd.Parameters.Add(new SqlParameter("@price", price));
+                    cmd.Parameters.Add(new SqlParameter("@active", active));
+                    
+                    cmd.Parameters.Add(new SqlParameter("@category", c.Id));
+
+
+                    cmd.ExecuteNonQuery();
+
+                    MessageBox.Show("Altereções salvas com sucesso!");
+                    Log.SaveLog(sqlConnect,"Produto Adicionado", DateTime.Now, "Edição");
+                }
+                catch (Exception Ex)
+                {
+                    MessageBox.Show("Erro ao editar este produto!" + "\n\n" + Ex.Message);
+                    throw;
+                }
+                finally
+                {
+                    sqlConnect.Close();
+                    ProductAllForm paf = new ProductAllForm(userAux);
+                    paf.Show();
+                    this.Close();
+                }
             }
         }
 
@@ -168,9 +265,10 @@ namespace FinalMateus.Forms
                 cmbCategory.Items.Add(c);
             }
         }
+
         private void pbxDelete_Click(object sender, EventArgs e)
         {
-            if (!string.IsNullOrEmpty(lblId.Text)) //-----
+            if (!string.IsNullOrEmpty(lblId.Text))
             {
                 SqlConnection sqlConnect = new SqlConnection(connectionString);
 
@@ -186,7 +284,8 @@ namespace FinalMateus.Forms
 
                     cmd.ExecuteNonQuery();
 
-                    MessageBox.Show("produto inativa!");
+                    MessageBox.Show("Produto inativo!");
+                    Log.SaveLog(sqlConnect,"Produto Desativado", DateTime.Now, "Excluir");
                 }
                 catch (Exception Ex)
                 {
@@ -195,6 +294,7 @@ namespace FinalMateus.Forms
                 }
                 finally
                 {
+                    ClearData();
                     sqlConnect.Close();
                 }
             }
@@ -202,12 +302,12 @@ namespace FinalMateus.Forms
 
         private void pbxBack_MouseEnter(object sender, EventArgs e)
         {
-
+            pbxBack.BackgroundImage = Resources.BackColor;
         }
 
         private void pbxBack_MouseLeave(object sender, EventArgs e)
         {
-
+            pbxBack.BackgroundImage = Resources.Back;
         }
 
         private void pbxSave_MouseEnter(object sender, EventArgs e)
